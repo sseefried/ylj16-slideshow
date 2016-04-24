@@ -138,7 +138,7 @@ data Event = Tap R2       -- location at which tap occurred.
 * Just what is a tap? How do you distinguish it from a drag?
 * `Physics` is a "special" event handled by `runPhysicsEventHandler` in back-end.
 ???
-
+---
 # Events (continued)
 
 * a "tap" is detected as
@@ -154,13 +154,13 @@ data Event = Tap R2       -- location at which tap occurred.
 
 
 
-
+---
 # Co-ordinate systems
 
 * back-end coordinates
 * world co-ordinates
 
-
+---
 # Exercises
 
 1. Make the germs "shirk away" from a death nearby. How quickly they move should
