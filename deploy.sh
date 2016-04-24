@@ -1,0 +1,1 @@
+scp index.html slideshow.md 'playspace:/home/sseefried/sites/seanseefried.com/public/ylj16'
