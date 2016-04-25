@@ -1,1 +1,1 @@
-scp index.html slideshow.md 'playspace:/home/sseefried/sites/seanseefried.com/public/ylj16'
+scp index.html slideshow.md *.png 'playspace:/home/sseefried/sites/seanseefried.com/public/ylj16'
