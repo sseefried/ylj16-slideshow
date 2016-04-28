@@ -3,14 +3,23 @@
 ## Sean Seefried & Christian Marie
 
 ---
-# Before we start
+# Preparation
 
-* Happy if you get what you wanted out of this workshop and leave half way to go check out
-  another
+* Copy the VM OVA off the USB stick and pass on to next person
+* Double click the OVA and import the VM user/password is `android`/`android`
 * These slides available at http://seanseefried.com/ylj16
-* Start at https://github.com/sseefried/docker-game-build-env
+* Once you've started the VM open README.md on desktop and have a read. You should aim to:
+  - run Docker container
+  - Build game APK in Docke container
+  - Get VM to recognise your android device and enable "Developer options" menu
+  - Deploy APK with `adb install`
 
 ---
+
+# Demo of the games
+
+---
+
 # Part 1: Building on Android
 
 ---
@@ -38,6 +47,10 @@ public static native void nativeInit();
 public static void unpackAssets() { ... }
 /* sets global variable called externalAssetsDir */
 ```
+???
+- nativeInit needs to be implemented in C which I'll show in the next slide.
+
+
 
 ---
 ## JNI implementation of `nativeInit`
@@ -102,9 +115,28 @@ main = ...
 ```
 ---
 
-# Part 2: Game Design
+
+# Part 2: Space Invaders & Functional Reactive Programming
+
+---
+
+# Space Invaders!
 
 
+### DEMO
+
+---
+# Exercises for Space Invaders
+
+
+1. Make the game playable with a mouse. This will make it playable using a touch screen
+2. Make the space invaders move right,down,left,down,right,down etc
+3. Add bombs that can destroy the cannon and must be dodged
+4. Make a mother ship come past every so often
+5 (optional) Clean up the collision detection to be pixel perfect
+
+---
+# Part 3: Epidemic
 
 ---
 # The main loop
@@ -127,6 +159,11 @@ mainLoop besRef handleEvent = loop $ do
 * In sense `handleEvent` _is_ the game. It's in `Game` module
 
 ???
+
+- In order not to consume too many resources the `delayBasedOnAverageFramerate`
+  function does exactly what you might think and just sleep for a certain amount of time
+  but it does so on a sliding window basis
+
 
 ---
 ## `runInputEventHandler`
@@ -353,74 +390,61 @@ fieldHeight = 100
 
 ---
 
-# Part 3: Building on VM
+# Monads: HipM
 
----
-# Why Docker?
+See module `HipM`
 
-
-
-
-
-
-
-
-
-
-
----
-# Running the Docker container
-
-```
-$ cd ~
-$ docker images
-
-REPOSITORY                            TAG                 IMAGE ID            CREATED             SIZE
-android-haskell                       latest              f1642cb749fa        40 hours ago        6.083 GB
-
-$ ./run-env.sh android-haskell
+```Haskell
+data HipScript next =
+    HipStep          !Double next
+  | AddHipCirc       !Double !R2 (HipCirc -> next)
+  | GetHipCircPos    !HipCirc (R2 -> next)
+  | GetHipCircVel    !HipCirc (R2 -> next)
+  | SetHipCircPos    !HipCirc R2 next
+  | SetHipCircVel    !HipCirc R2 next
+  | SetHipCircRadius !HipCirc !Double next
+  | AddHipStaticPoly ![R2] next
+  | RemoveHipCirc    !HipCirc next
+  | SetGravity       !R2 next
+  | SetDamping       !Double next
 ```
 
-Also can do
-
-    $ ./run-env.sh f1642cb749fa
-
-Can tag images with
-
-    $ docker tag <image id> <tag>
-
-e.g.
-
-    $ docker tag f1642cb749fa android-haskell
-
-
 ---
-# Building packages
 
-## Local testing (on host machine)
+# GameM
 
-```
-$ cd ~/hip-code/open-epidemic-game
-$ stack build
-$ stack exec Epidemic
+See module `GameM`
+
+```Haskell
+data GameScript next =
+    forall a. Random a => GetRandom    (a,a) (a -> next)
+  | forall a.             EvalRand     (Rand StdGen a) (a -> next)
+  |                       Get          (GameState -> next)
+  |                       Modify       (GameState -> GameState) next
+  |                       Put          !GameState next
+  |                       PrintStr     !String next
+  |                       GetTime      (UTCTime -> next)
+  |                       TimeSince    UTCTime (Double -> next)
+  | forall a.             RunGLM       (GLM a) (a -> next)
+  |                       NewHipSpace  (HipSpace -> next)
+  | forall a.             RunHipM      !HipSpace (HipM a) (a -> next)
 ```
 
-## Building for Android (in Docker container)
-
-1. `$ cd ~/hip-code/android-build-game-apk`
-2. Set up `config.json`
-3. `$ ./build-game-apk.sh`
-
-
 ---
-# Exercises
 
-1. Make the germs "shirk away" from a death nearby. How quickly they move should
-   be proportional to how close the death/tap was to them
+# Exercises for Epidemic
 
-2. Instead of having germs just divide in two, make them divide into a random
+1. Instead of having germs just divide in two, make them divide into a random
    number of germs
+
+2. Make the germs "shirk away" from a death nearby. How quickly they move should
+   be proportional to how close the death/tap was to them
 
 3. Add gravity into the game. Create a beaker using a few `AddHipStaticPoly`s from the `HipM`
    monad
+
 ---
+
+# Challenge Exercise
+
+1. Create Pong from scratch using Helm
