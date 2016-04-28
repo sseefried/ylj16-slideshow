@@ -10,7 +10,7 @@
 * These slides available at http://seanseefried.com/ylj16
 * Once you've started the VM open README.md on desktop and have a read. You should aim to:
   - run Docker container
-  - Build game APK in Docke container
+  - Build game APK in Docker container
   - Get VM to recognise your android device and enable "Developer options" menu
   - Deploy APK with `adb install`
 
@@ -116,14 +116,145 @@ main = ...
 ---
 
 
+# Building an environment
+
+## Building GHC cross compiler to ARMv7
+
+* Full credit to neurocyte (CJ van den Berg)
+* Builds iconv, ncurses and libgmp
+* Applies patches
+* Builds
+
+???
+- I can’t thank CJ van den Berg enough for this work. I can safely say that if this work had not
+been done I may well have given up in despair at this point. At the very least it would have
+slowed me down a lot.
+- Just building common C libraries on Android can be difficult as the NDK only comes with
+   “cut down” versions of many libraries. For instance glibc does not exist. Google replaced that
+   with a cut down version called bionic
+- The wrapper scripts
+
+---
+
+# Building an environment
+
+Pure Haskell libraries were fine
+It was the Haskell C binding libraries that were tricky
+
+Haskell dependencies:
+
+* SDL2: Window management and event handling
+* SDL2-mixer: for sound
+* Cairo: For procedurally generated graphics for the germs
+* OpenGLRaw: to distort germs and perform other rendering effects
+* HipMunk. A binding to Chipmunk for physics. Couldn't find a binding for Box2D (and didn't want to write one)
+
+C dependencies:
+
+* Taking account of further deps the complete list of C libraries was:
+  cairo, freetype2, SDL2, SDL2_mixer, libogg, libpng, libvorbis, libvorbisfile, pixman, GLESv2
+* These did not always build “out of the box” on Android and required patching
+
+---
+
+# Repeatable builds
+
+* We know the complete build will take hours.
+* Later stages depend heavily on earlier stages
+* It’s brittle. One small change to any part could make it fail. This makes testing difficult!
+* Losing a day because your 2 hour build script failed because of something
+  stupid 4+ times is liable to send you into a rage and/or insanity!
+
+???
+
+The problem of building and developing a long build script
+
+The first major problem is that we know it’s going to take hours to run. Later stages of the build
+depend heavily on the earlier stages. Now here’s the problem. Even if you’ve correctly realised that
+you should break your build script into smaller build scripts that you run in sequence, at some
+point you’re going to run into a library build that doesn’t quite work the first time. So you hack a
+little, patch it up, run make clean, and try again. But how truly know that the full state of the
+filesystem is in exactly the state it was before you first ran the failed build?  You don’t! And so
+this makes testing difficult because you have to run the damn script, from scratch, to be truly
+sure.
+
+---
+
+
+# A novel use of Docker
+
+_What if you could check-point the file system between phases of the build!?_
+
+* Docker uses a union file system
+* Docker has a build cache
+* Dockerfile`s have ADD and RUN commands.
+* ADD copies files from host to image
+* Trick is: ADD a “scriptlet” just before you RUN it. Excellent for maintainability
+
+???
+
+What I’m about to show you relies on a feature of Docker that was introduced for reasons of
+efficiency, but which is perfect for developing a long running build scripts.
+
+Docker uses a union file system which is a essentially a file system in which files are layered on
+top of each other. If a file in a higher layer is at exactly the same path as a file in a lower
+layer then it shadows (or effectively overwrites it). In this way you can build up a file system as
+a set of diffs in very much the same way as your favourite revision control system builds up text
+files as a collection of diffs.
+
+Now, those of us who have used Docker know that we build images using Dockerfiles. The fantastic
+thing about Docker is that it maintains a build cache. This build cache effectively corresponds to
+the layers of the union file system. Each “command” of the Dockerfile can be uniquely identified. If
+you change, say, the fifth command then Docker will effectively only build onwards from that
+command.
+
+The ADD command is fantastic because it adds files from the host to the Docker image, effectively
+introducing the files “just in time” to be compiled.  There is also a RUN command to run arbitrary
+commands. The trick is to ADD libraries just before you RUN the commands to build them. This way you
+are absolutely sure that the file system is a guaranteed state.
+
+It also helps for maintainability’s sake. If you want to upgrade the library the Dockerfile will
+only have to build onwards from the point where you introduce the new library files. If you’d added
+the library files earlier in the Dockerfile you have no choice but to build from scratch! ARGH, that
+takes forever!
+
+---
+
+# Docker's union file system
+
+<img src="docker.png">
+
+---
+
+# Dockerfile example
+
+```
+$ docker build .
+… stuff happened here…
+Step 82 : ADD scripts/build-Hipmunk.sh $BASE/
+ ---> Using cache
+ ---> 2e3dd7c9429c
+Step 83 : RUN ./build-Hipmunk.sh
+ ---> Using cache
+ ---> fec2714e936d
+Step 84 : ADD scripts/clone-OpenGLRaw.sh $BASE/
+ ---> Using cache
+ ---> eed2b8d64ff6
+Step 85 : RUN ./clone-OpenGLRaw.sh
+ ---> Using cache
+ ---> 016bf318c97e
+```
+
+The repo `https://github.com/sseefried/docker-game-build-env` might be a bigger
+contribution to the community than the game itself.
+
+
 # Part 2: Space Invaders & Functional Reactive Programming
 
 ---
 
-# Space Invaders!
+[Add slides here]
 
-
-### DEMO
 
 ---
 # Exercises for Space Invaders
