@@ -183,11 +183,9 @@ sure.
 
 # A novel use of Docker
 
-_What if you could check-point the file system between phases of the build!?_
-
 * Docker uses a union file system
 * Docker has a build cache
-* Dockerfile`s have ADD and RUN commands.
+* Dockerfiles have ADD and RUN commands.
 * ADD copies files from host to image
 * Trick is: ADD a “scriptlet” just before you RUN it. Excellent for maintainability
 
@@ -220,12 +218,6 @@ takes forever!
 
 ---
 
-# Docker's union file system
-
-<img src="docker.png">
-
----
-
 # Dockerfile example
 
 ```
@@ -247,7 +239,7 @@ Step 85 : RUN ./clone-OpenGLRaw.sh
 
 The repo `https://github.com/sseefried/docker-game-build-env` might be a bigger
 contribution to the community than the game itself.
-
+---
 
 # Part 2: Space Invaders & Functional Reactive Programming
 
@@ -579,3 +571,9 @@ data GameScript next =
 # Challenge Exercise
 
 1. Create Pong from scratch using Helm
+
+---
+# Contact details
+
+## Sean Seefried <sean.seefried@gmail.com>
+## Christian Marie <christian@ponies.io>
